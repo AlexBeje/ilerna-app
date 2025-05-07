@@ -7,8 +7,7 @@ import { UserListComponent } from '@/components/user/usersList.component';
   imports: [RouterOutlet, UserListComponent],
   template: `
     <main class="container mx-auto px-4">
-      <h1 class="text-4xl font-bold text-center text-[#010202] my-4">Proyecto Ilerna</h1>
-      <div class="mb-4">
+      <div class="my-4">
         <app-user-list />
       </div>
       <router-outlet />
