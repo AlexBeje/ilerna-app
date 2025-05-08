@@ -15,9 +15,9 @@ import type { User } from '@/services/user.service';
       <i class="fas fa-angle-left"></i>
     </button>
     <button (click)="scrollRight()" class="absolute right-1 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full shadow p-2 w-10 h-10 lg:hidden">
-    <i class="fas fa-angle-right"></i>
+      <i class="fas fa-angle-right"></i>
     </button>
-    <div #scrollContainer class="flex overflow-x-auto gap-6 lg:gap-10 px-14 lg:px-0 scrollbar-hide">
+    <div #scrollContainer class="flex overflow-x-hidden gap-6 lg:gap-10 px-14 lg:px-0 scrollbar-hide">
       <div *ngFor="let user of users(); let i = index" class="w-14 cursor-pointer" (click)="navigateToUser(user.id)">
         <div [ngClass]="getRandomColor(i) + ' rounded-full w-14 h-14 flex items-center justify-center text-2xl'">
           {{ getUserNameFirstLetter(user.name) }}

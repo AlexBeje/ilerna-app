@@ -5,6 +5,7 @@ import { UserService, User } from '@/services/user.service';
 import { PostService, Post } from '@/services/post.service';
 import { AlbumService, Album } from '@/services/album.service';
 import { CommentService, Comment } from '@/services/comment.service';
+import { TodoService, Todo } from '@/services/todo.service';
 import { signal } from '@angular/core';
 import { switchMap } from 'rxjs/operators';
 
@@ -87,7 +88,14 @@ import { switchMap } from 'rxjs/operators';
           </div>
         </div>
         <div *ngIf="activeTab() === 'todos'">
-          <p>List of todos...</p>
+        <div class="bg-white rounded-2xl shadow-md overflow-hidden p-6 flex flex-col gap-2">
+          <h2 class="text-xl font-semibold text-gray-800">ToDo's</h2>
+          <div class="flex flex-col gap-2">
+            <div *ngFor="let todo of todos()" class="bg-gray-100 rounded-lg p-4 flex items-center">
+              <input type="checkbox" [checked]="todo.completed" class="mr-2" (click)="$event.preventDefault()"/>{{ todo.title }}
+            </div>
+          </div>
+        </div>
         </div>
       </div>
     </div>
@@ -99,12 +107,14 @@ export class UserComponent implements OnInit {
   albums = signal<Album[] | undefined>([]);
   activeTab = signal<string>('posts');
   comments: { [postId: number]: WritableSignal<Comment[]> } = {};
+  todos = signal<Todo[] | undefined>([]);
 
   constructor(
     private userService: UserService,
     private postService: PostService,
     private albumService: AlbumService,
     private commentsService: CommentService,
+    private todoService: TodoService,
     private route: ActivatedRoute
   ) { }
 
@@ -138,6 +148,15 @@ export class UserComponent implements OnInit {
             },
             error: (error) => {
               console.error('Error fetching albums:', error);
+            },
+          });
+
+          this.todoService.getTodos(data?.id.toString()).subscribe({
+            next: (data) => {
+              this.todos.set(data);
+            },
+            error: (error) => {
+              console.error('Error fetching todos:', error);
             },
           });
         },
