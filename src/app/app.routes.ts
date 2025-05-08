@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { UserComponent } from '@/components/user/user.component';
+import { UserComponent } from '@/components/user/userDetail.component';
 
 export const routes: Routes = [
     { path: '', redirectTo: '/home', pathMatch: 'full' },

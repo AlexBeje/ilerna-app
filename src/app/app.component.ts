@@ -6,11 +6,14 @@ import { UserListComponent } from '@/components/user/usersList.component';
   selector: 'app-root',
   imports: [RouterOutlet, UserListComponent],
   template: `
-    <main class="container mx-auto px-4">
-      <div class="my-4">
+    <main class="lg:container mx-auto">
+      <div class="p-2">
         <app-user-list />
       </div>
-      <router-outlet />
+      <hr class="py-2"/>
+      <div class="px-4">
+        <router-outlet />
+      </div>
     </main>
   `
 })

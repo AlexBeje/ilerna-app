@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef  } from '@angular/core';
 import { UserService } from '@/services/user.service';
 import { CommonModule } from '@angular/common';
 import { signal } from '@angular/core';
@@ -10,8 +10,15 @@ import type { User } from '@/services/user.service';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="flex overflow-x-auto gap-6 lg:gap-12">
-      <div *ngFor="let user of usersSignal(); let i = index" class="w-14 cursor-pointer" (click)="navigateToUser(user.id)">
+  <div class="relative">
+    <button (click)="scrollLeft()" class="absolute left-1 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full shadow p-2 w-10 h-10 lg:hidden">
+      <i class="fas fa-angle-left"></i>
+    </button>
+    <button (click)="scrollRight()" class="absolute right-1 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full shadow p-2 w-10 h-10 lg:hidden">
+    <i class="fas fa-angle-right"></i>
+    </button>
+    <div #scrollContainer class="flex overflow-x-auto gap-6 lg:gap-10 px-14 lg:px-0 scrollbar-hide">
+      <div *ngFor="let user of users(); let i = index" class="w-14 cursor-pointer" (click)="navigateToUser(user.id)">
         <div [ngClass]="getRandomColor(i) + ' rounded-full w-14 h-14 flex items-center justify-center text-2xl'">
           {{ getUserNameFirstLetter(user.name) }}
         </div>
@@ -21,14 +28,15 @@ import type { User } from '@/services/user.service';
   `,
 })
 export class UserListComponent implements OnInit {
-  usersSignal = signal<User[]>([]);
+  users = signal<User[]>([]);
+  @ViewChild('scrollContainer') scrollContainer!: ElementRef;
 
   constructor(private userService: UserService, private router: Router) {}
 
   ngOnInit(): void {
     this.userService.getUsers().subscribe({
       next: (data) => {
-        this.usersSignal.set(data);
+        this.users.set(data);
       },
       error: (error) => {
         console.error('Error fetching users:', error);
@@ -53,5 +61,13 @@ export class UserListComponent implements OnInit {
 
   navigateToUser(userId: number): void {
     this.router.navigate([`/user/${userId}`]);
+  }
+
+  scrollLeft(): void {
+    this.scrollContainer.nativeElement.scrollBy({ left: -300, behavior: 'smooth' });
+  }
+
+  scrollRight(): void {
+    this.scrollContainer.nativeElement.scrollBy({ left: 300, behavior: 'smooth' });
   }
 }

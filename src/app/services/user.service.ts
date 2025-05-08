@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 interface Geo {
   lat: string;
@@ -42,5 +43,11 @@ export class UserService {
 
   getUsers(): Observable<User[]> {
     return this.http.get<User[]>(this.apiUrl);
+  }
+
+  getUser(id: string | null): Observable<User | undefined> {
+    return this.http.get<User[]>(this.apiUrl).pipe(
+      map(users => users.find(user => user.id.toString() === id))
+    );
   }
 }
