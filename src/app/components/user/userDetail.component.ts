@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { UserService, User } from '@/services/user.service';
 import { PostService, Post } from '@/services/post.service';
 import { AlbumService, Album } from '@/services/album.service';
+import { CommentService, Comment } from '@/services/comment.service';
 import { signal } from '@angular/core';
 import { switchMap } from 'rxjs/operators';
 
@@ -44,10 +45,24 @@ import { switchMap } from 'rxjs/operators';
       <div class="tab-content mb-6">
         <div *ngIf="activeTab() === 'posts'" class="flex flex-col gap-2">
           <div *ngFor="let post of posts(); let i = index" class="bg-white rounded-2xl shadow-md overflow-hidden p-6 flex flex-col gap-2">
-            <h2 class="text-xl font-semibold text-gray-800">{{getCapitalized(post.title)}}</h2>
-            <h3 class="text-lg text-gray-600">{{getCapitalized(post.body)}}</h3>
+            <h2 class="text-xl font-semibold text-gray-800">{{ getCapitalized(post.title) }}</h2>
+            <h3 class="text-lg text-gray-600">{{ getCapitalized(post.body) }}</h3>
             <hr />
-            <h3 class="text-lg text-gray-800 font-semibold">Comments</h3>
+            <div class="flex justify-between items-center">
+              <h3 class="text-lg text-gray-800 font-semibold">Comments</h3>
+              <p class="text-sm text-gray-600"
+                (click)="toggleComments(post.id)"
+                class="cursor-pointer text-blue-500 hover:text-blue-700 transition duration-200 ease-in-out">
+                {{ this.comments[post.id]().length > 0 ? 'Hide Comments' : 'Show Comments' }}
+              </p>
+            </div>
+            <div *ngIf="this.comments[post.id]().length > 0" class="flex flex-col gap-2">
+              <div *ngFor="let comment of comments[post.id](); let j = index" class="bg-gray-100 rounded-lg p-4 flex flex-col gap-1">
+                <div class="text-lg font-semibold">{{ comment.name }}</div>
+                <p class="text-gray-600">{{ getCapitalized(comment.body) }}</p>
+                <div class="text-sm text-gray-500 font-semibold">{{ comment.email }}</div>
+              </div>
+            </div>
           </div>
         </div>
         <div *ngIf="activeTab() === 'albums'">
@@ -83,11 +98,13 @@ export class UserComponent implements OnInit {
   posts = signal<Post[] | undefined>([]);
   albums = signal<Album[] | undefined>([]);
   activeTab = signal<string>('posts');
+  comments: { [postId: number]: WritableSignal<Comment[]> } = {};
 
   constructor(
     private userService: UserService,
     private postService: PostService,
     private albumService: AlbumService,
+    private commentsService: CommentService,
     private route: ActivatedRoute
   ) { }
 
@@ -95,8 +112,8 @@ export class UserComponent implements OnInit {
     this.route.paramMap
       .pipe(
         switchMap(params => {
-          const id = params.get('id');
-          return this.userService.getUser(id);
+          const userId = params.get('id');
+          return this.userService.getUser(userId);
         })
       )
       .subscribe({
@@ -106,6 +123,9 @@ export class UserComponent implements OnInit {
           this.postService.getPosts(data?.id.toString()).subscribe({
             next: (data) => {
               this.posts.set(data);
+              data?.forEach(post => {
+                this.comments[post.id] = signal([]);
+              });
             },
             error: (error) => {
               console.error('Error fetching posts:', error);
@@ -114,7 +134,6 @@ export class UserComponent implements OnInit {
 
           this.albumService.getAlbums(data?.id.toString()).subscribe({
             next: (data) => {
-              console.log('Albums:', data);
               this.albums.set(data);
             },
             error: (error) => {
@@ -125,13 +144,26 @@ export class UserComponent implements OnInit {
         error: (error) => {
           console.error('Error fetching user:', error);
         },
-        complete: () => {
-          console.log('User data loading completed');
-        },
       });
   }
 
   getCapitalized(str: string): string {
     return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  toggleComments(postId: number): void {
+    const currentComments = this.comments[postId]();
+    if (currentComments.length > 0) {
+      this.comments[postId].set([]);
+    } else {
+      this.commentsService.getComments(postId).subscribe({
+        next: (comments) => {
+          this.comments[postId].set(comments);
+        },
+        error: (error) => {
+          console.error(`Error fetching comments for post ${postId}:`, error);
+        },
+      });
+    }
   }
 }

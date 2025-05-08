@@ -41,9 +41,6 @@ export class UserListComponent implements OnInit {
       error: (error) => {
         console.error('Error fetching users:', error);
       },
-      complete: () => {
-        console.log('User data loading completed');
-      },
     });
   }
 

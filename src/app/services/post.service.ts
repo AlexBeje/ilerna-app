@@ -16,11 +16,11 @@ export interface Post {
 export class PostService {
   private apiUrl = 'https://jsonplaceholder.typicode.com/posts';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
-  getPosts(id: string | undefined): Observable<Post[] | undefined> {
+  getPosts(userId: string | undefined): Observable<Post[] | undefined> {
     return this.http.get<Post[]>(this.apiUrl).pipe(
-      map(posts => posts.filter(post => post.userId.toString() === id))
+      map(posts => posts.filter(post => post.userId.toString() === userId))
     );
   }
 }

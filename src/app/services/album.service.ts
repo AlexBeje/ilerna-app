@@ -14,7 +14,7 @@ export interface Album {
 export class AlbumService {
   private apiUrl = 'https://jsonplaceholder.typicode.com/albums';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   getAlbums(id: string | undefined): Observable<Album[] | undefined> {
     return this.http.get<Album[]>(this.apiUrl).pipe(

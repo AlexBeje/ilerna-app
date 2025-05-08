@@ -39,15 +39,15 @@ export interface User {
 export class UserService {
   private apiUrl = 'https://jsonplaceholder.typicode.com/users';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   getUsers(): Observable<User[]> {
     return this.http.get<User[]>(this.apiUrl);
   }
 
-  getUser(id: string | null): Observable<User | undefined> {
+  getUser(userId: string | null): Observable<User | undefined> {
     return this.http.get<User[]>(this.apiUrl).pipe(
-      map(users => users.find(user => user.id.toString() === id))
+      map(users => users.find(user => user.id.toString() === userId))
     );
   }
 }
