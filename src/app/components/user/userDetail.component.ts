@@ -5,6 +5,7 @@ import { UserService, User } from '@/services/user.service';
 import { PostService, Post } from '@/services/post.service';
 import { AlbumService, Album } from '@/services/album.service';
 import { CommentService, Comment } from '@/services/comment.service';
+import { PhotoService, Photo } from '@/services/photo.service';
 import { TodoService, Todo } from '@/services/todo.service';
 import { signal } from '@angular/core';
 import { switchMap } from 'rxjs/operators';
@@ -16,6 +17,7 @@ import { switchMap } from 'rxjs/operators';
   template: `
     <div class="flex flex-col gap-2">
       <h1 class="text-2xl font-semibold">{{user()?.name}}</h1>
+
       <div class="flex space-x-4 border-b">
         <button 
           class="px-4 py-2"
@@ -71,10 +73,11 @@ import { switchMap } from 'rxjs/operators';
             <div
               *ngFor="let album of albums(); let j = index"
               class=" bg-white shadow overflow-hidden flex flex-col cursor-pointer hover:shadow-md transition duration-100 ease-in-out"
+              (click)="openAlbumModal(album)"
             >
               <div class="flex-1 bg-gray-200  border-white">
                 <img
-                  src="https://dummyimage.com/300"
+                  src="https://dummyimage.com/600"
                   alt="Album photo"
                   class="w-full h-full object-cover"
                 />
@@ -98,6 +101,43 @@ import { switchMap } from 'rxjs/operators';
         </div>
         </div>
       </div>
+
+      <div *ngIf="showAlbumModal()" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 px-4" (click)="closeAlbumModal()">
+        <div class="bg-white shadow-lg p-6 max-w-3xl w-full max-h-[80vh] overflow-y-auto relative" (click)="$event.stopPropagation()">
+          <button class="absolute top-4 right-6 text-white bg-black bg-opacity-40 hover:bg-opacity-70 px-2 py-1 rounded" (click)="closeAlbumModal()">✕</button>
+          <h2 class="text-xl font-semibold mb-4">{{ selectedAlbumTitle() }}</h2>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <ng-container *ngIf="!photosLoading(); else photosLoadingTemplate">
+              <div *ngFor="let photo of photos()" class="flex flex-col items-center cursor-pointer" (click)="openPhotoModal(photo)">
+                <img [src]="photo.thumbnailUrl" [alt]="photo.title" class="w-full h-auto rounded-md shadow hover:shadow-lg transition duration-200 ease-in-out" (load)="photosLoading.set(false)">
+                <p class="text-sm text-center mt-2">{{ photo.title }}</p>
+              </div>
+            </ng-container>
+            <ng-template #photosLoadingTemplate>
+              <div class="col-span-full text-center py-10">
+                <div class="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto animate-[spin_1s_linear_infinite]"></div>
+                <p class="mt-2 text-gray-600">Loading photos...</p>
+              </div>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="showPhotoModal()" class="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 px-4" (click)="closePhotoModal()">
+      <div class="relative max-w-4xl w-full" (click)="$event.stopPropagation()">
+        <ng-container *ngIf="!photoLoading(); else photoLoadingTemplate">
+          <img [src]="selectedPhoto()?.url" [alt]="selectedPhoto()?.title" class="w-full h-auto rounded shadow-lg" (load)="photoLoading.set(false)">
+          <button class="absolute top-2 right-2 text-white bg-black bg-opacity-40 hover:bg-opacity-70 px-2 py-1 rounded" (click)="closePhotoModal()">✕</button>
+          <p class="text-white text-center mt-2 text-sm">{{ selectedPhoto()?.title }}</p>
+        </ng-container>
+        <ng-template #photoLoadingTemplate>
+          <div class="flex flex-col items-center justify-center py-10">
+            <div class="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto animate-[spin_1s_linear_infinite]"></div>
+            <p class="mt-4 text-sm text-white">Loading photo...</p>
+          </div>
+        </ng-template>
+      </div>
     </div>
   `,
 })
@@ -108,6 +148,13 @@ export class UserComponent implements OnInit {
   activeTab = signal<string>('posts');
   comments: { [postId: number]: WritableSignal<Comment[]> } = {};
   todos = signal<Todo[] | undefined>([]);
+  photos = signal<Photo[] | undefined>([]);
+  selectedAlbumTitle = signal<string>('');
+  showAlbumModal = signal<boolean>(false);
+  selectedPhoto = signal<Photo | null>(null);
+  showPhotoModal = signal(false);
+  photosLoading = signal<boolean>(false);
+  photoLoading = signal<boolean>(false);
 
   constructor(
     private userService: UserService,
@@ -115,6 +162,7 @@ export class UserComponent implements OnInit {
     private albumService: AlbumService,
     private commentsService: CommentService,
     private todoService: TodoService,
+    private photoService: PhotoService,
     private route: ActivatedRoute
   ) { }
 
@@ -184,5 +232,46 @@ export class UserComponent implements OnInit {
         },
       });
     }
+  }
+
+  openAlbumModal(album: Album): void {
+    this.selectedAlbumTitle.set(album.title);
+    this.photosLoading.set(true);
+  
+    this.photoService.getPhotos(album.id).subscribe({
+      next: (data) => {
+        this.photos.set(data);
+        this.showAlbumModal.set(true);
+        setTimeout(() => {
+          this.photosLoading.set(false);
+        }, 1000);
+      },
+      error: (err) => {
+        console.error('Error fetching photos:', err);
+        this.photosLoading.set(false);
+      },
+    });
+  }
+
+  closeAlbumModal(): void {
+    this.showAlbumModal.set(false);
+    this.photos.set([]);
+    this.selectedAlbumTitle.set('');
+    this.photosLoading.set(false);
+  }
+
+  openPhotoModal(photo: Photo): void {
+    this.photoLoading.set(true);
+    this.showPhotoModal.set(true);
+    this.selectedPhoto.set(photo);
+    setTimeout(() => {
+      this.photoLoading.set(false);
+    }, 1000);
+  }
+
+  closePhotoModal(): void {
+    this.showPhotoModal.set(false);
+    this.selectedPhoto.set(null);
+    this.photoLoading.set(true);
   }
 }
